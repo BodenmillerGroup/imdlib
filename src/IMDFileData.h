@@ -12,16 +12,24 @@ namespace imd {
     struct IMDFileData {
         class CSRAccessor {
         private:
+            const IMDFileData &data;
             const std::vector<std::uint16_t> &values;
 
-        public:
-            const IMDFileData &data;
+            std::size_t getMarkerIndex(const std::string &markerName) const;
 
+        public:
             CSRAccessor(const IMDFileData &data, const std::vector<std::uint16_t> &values);
 
-            std::uint16_t operator()(std::size_t pushIndex, std::size_t markerIndex) const;
+            std::vector<std::uint16_t> operator[](std::size_t pushIndex) const;
+
+            std::vector<std::uint16_t> operator[](const std::string &markerName) const;
 
             std::uint16_t operator()(std::size_t pushIndex, std::string markerName) const;
+
+            std::vector<std::uint16_t> getByMarkerIndex(std::size_t markerIndex) const;
+
+            std::uint16_t getByMarkerIndex(std::size_t pushIndex, std::size_t markerIndex) const;
+
         };
 
         const std::vector<std::string> markerNames;
