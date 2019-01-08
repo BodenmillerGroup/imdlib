@@ -69,6 +69,17 @@ namespace imd {
         return 0;
     }
 
+    std::vector<std::uint16_t> IMDFileData::CSRAccessor::toDense() const {
+        std::vector<uint16_t> matrix(data.getNumPushes() * data.getNumMarkers(), 0);
+        for (std::size_t pushIndex = 0; pushIndex < data.getNumPushes(); ++pushIndex) {
+            for (std::size_t i = data.pushOffsets[pushIndex]; i < data.pushOffsets[pushIndex + 1]; ++i) {
+                std::size_t markerIndex = data.markerIndices[i];
+                matrix[pushIndex * data.getNumMarkers() + markerIndex] = values[i];
+            }
+        }
+        return matrix;
+    }
+
     std::size_t IMDFileData::CSRAccessor::getMarkerIndex(const std::string &markerName) const {
         const auto iter = std::find(data.markerNames.begin(), data.markerNames.end(), markerName);
         if (iter == data.markerNames.end()) {

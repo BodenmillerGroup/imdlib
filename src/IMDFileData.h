@@ -30,6 +30,8 @@ namespace imd {
 
             std::uint16_t getByMarkerIndex(std::size_t pushIndex, std::size_t markerIndex) const;
 
+            std::vector<std::uint16_t> toDense() const;
+
         };
 
         const std::vector<std::string> markerNames;

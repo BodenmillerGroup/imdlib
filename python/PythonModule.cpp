@@ -57,10 +57,16 @@ PYBIND11_MODULE(imdpy, m) {
             .def_property_readonly("num_markers", &imd::IMDFileData::getNumMarkers, "Number of markers")
             .def_property_readonly("num_pushes", &imd::IMDFileData::getNumPushes, "Number of pushes");
 
+    // TODO use buffer views for toDense (https://github.com/pybind/pybind11/blob/master/docs/advanced/pycpp/numpy.rst)
     py::class_<imd::IMDFileData::CSRAccessor>(m, "IMDFileDataCSRAccessor")
             .def("__getitem__", imd::py::getValuesByPushIndex, py::arg("pushIndex"), "Value access by push index")
             .def("__getitem__", imd::py::getValuesByMarkerName, py::arg("markerName"), "Value access by marker name")
-            .def("getByMarkerIndex", imd::py::getValuesByMarkerIndex, py::arg("markerIndex"), "Value access by marker index")
-            .def("__getitem__", imd::py::getValueByPushIndexAndMarkerName, py::arg("pushIndex"), py::arg("markerName"), "Value access by push index and marker name")
-            .def("getByMarkerIndex", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("pushIndex"), py::arg("markerIndex"), "Value access by push index and marker index");
+            .def("getByMarkerIndex", imd::py::getValuesByMarkerIndex, py::arg("markerIndex"),
+                 "Value access by marker index")
+            .def("__getitem__", imd::py::getValueByPushIndexAndMarkerName, py::arg("index"),
+                 "Value access by push index and marker name")
+            .def("getByMarkerIndex", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
+                 "Value access by push index and marker index")
+            .def("toDense", &imd::IMDFileData::CSRAccessor::toDense,
+                 "Converts the matrix to a dense row-major representation");
 }
