@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 project(imdlib)
 
+option(BUILD_TEST "Build tests" OFF)
 option(BUILD_PYTHON_MODULE "Build python module" ON)
 
 include(GNUInstallDirs)
@@ -20,6 +21,10 @@ set_target_properties(imd PROPERTIES VERSION ${IMDLIB_VERSION_MAJOR}.${IMDLIB_VE
 
 install(TARGETS imd LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR})
 install(FILES ${HEADER_FILES} DESTINATION ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+
+if (BUILD_TEST)
+    add_subdirectory(test)
+endif ()
 
 if (BUILD_PYTHON_MODULE)
     add_subdirectory(python)

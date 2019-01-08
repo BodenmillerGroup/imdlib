@@ -1,0 +1,6 @@
+find_package(GTest REQUIRED)
+find_package(Threads REQUIRED)
+file(GLOB_RECURSE TEST_FILES test *.cpp *.hpp)
+add_executable(imdtest IMDTest.cpp ${TEST_FILES})
+target_link_libraries(imdtest PUBLIC imd ${GTEST_BOTH_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+target_include_directories(imdtest PUBLIC ../src ${GTEST_INCLUDE_DIRS})
