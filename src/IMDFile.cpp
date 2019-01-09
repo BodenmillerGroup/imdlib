@@ -136,17 +136,18 @@ namespace imd {
         // read data
         IMDFileData data(markerNames);
         file.seekg(0, std::ios_base::beg);
-        std::vector<uint16_t> buffer(2 * markerNames.size());
-        const auto numPushes = xmlStartPos / (4 * markerNames.size());
-        for (std::size_t push = 0; push < numPushes; ++push) {
+        std::vector<std::uint16_t> buffer(2 * markerNames.size());
+        const auto bufferSize = buffer.size() * sizeof(std::uint16_t);
+        for (std::size_t pushIndex = 0; pushIndex < xmlStartPos / bufferSize; ++pushIndex) {
+            file.read((char *) buffer.data(), bufferSize);
             data.pushOffsets.push_back(data.markerIndices.size());
-            file.read((char *) buffer.data(), 2 * buffer.size());
             for (std::size_t markerIndex = 0; markerIndex < markerNames.size(); ++markerIndex) {
-                std::uint16_t intensityValue = buffer[2 * markerIndex];
+                const std::uint16_t intensityValue = buffer[2 * markerIndex];
+                const std::uint16_t pulseValue = buffer[2 * markerIndex + 1];
                 if (intensityValue > 0) {
                     data.markerIndices.push_back(markerIndex);
                     data.intensityValues.push_back(intensityValue);
-                    data.pulseValues.push_back(buffer[2 * markerIndex + 1]);
+                    data.pulseValues.push_back(pulseValue);
                 }
             }
         }
