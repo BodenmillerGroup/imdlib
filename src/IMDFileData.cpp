@@ -3,7 +3,7 @@
 namespace imd {
 
     IMDFileData::IMDFileData(const std::vector<std::string> &markerNames)
-            : markerNames(markerNames) {
+            : markerNames(markerNames), markerNameIndices(createMarkerNameIndices(markerNames)) {
     }
 
     const IMDFileData::CSRAccessor IMDFileData::getPulses() const {
@@ -22,6 +22,19 @@ namespace imd {
         return markerNames.size();
     }
 
+    const std::vector<std::string> &IMDFileData::getMarkerNames() const {
+        return markerNames;
+    }
+
+    std::map<std::string, std::size_t>
+    IMDFileData::createMarkerNameIndices(const std::vector<std::string> &markerNames) {
+        std::map<std::string, std::size_t> markerNameIndices;
+        for (std::size_t i = 0; i < markerNames.size(); ++i) {
+            markerNameIndices[markerNames[i]] = i;
+        }
+        return markerNameIndices;
+    }
+
     IMDFileData::CSRAccessor::CSRAccessor(const IMDFileData &data, const std::vector<std::uint16_t> &values)
             : data(data), values(values) {
     }
@@ -34,11 +47,11 @@ namespace imd {
     }
 
     std::vector<std::uint16_t> IMDFileData::CSRAccessor::operator[](const std::string &markerName) const {
-        return getByMarkerIndex(getMarkerIndex(markerName));
+        return getByMarkerIndex(data.markerNameIndices.at(markerName));
     }
 
     std::uint16_t IMDFileData::CSRAccessor::operator()(std::size_t pushIndex, std::string markerName) const {
-        return getByMarkerIndex(pushIndex, getMarkerIndex(markerName));
+        return getByMarkerIndex(pushIndex, data.markerNameIndices.at(markerName));
     }
 
     std::vector<std::uint16_t> IMDFileData::CSRAccessor::getByMarkerIndex(std::size_t markerIndex) const {
@@ -78,14 +91,6 @@ namespace imd {
             }
         }
         return matrix;
-    }
-
-    std::size_t IMDFileData::CSRAccessor::getMarkerIndex(const std::string &markerName) const {
-        const auto iter = std::find(data.markerNames.begin(), data.markerNames.end(), markerName);
-        if (iter == data.markerNames.end()) {
-            throw std::out_of_range("Marker not found: " + markerName);
-        }
-        return static_cast<size_t>(std::distance(data.markerNames.begin(), iter));
     }
 
 }

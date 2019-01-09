@@ -51,21 +51,20 @@ PYBIND11_MODULE(imdpy, m) {
             .def("read_metadata", &imd::IMDFile::readMetadata, "Read the metadata into memory");
 
     py::class_<imd::IMDFileData>(m, "IMDFileData")
-            .def_readonly("markerNames", &imd::IMDFileData::markerNames, "Marker names")
             .def_property_readonly("pulses", &imd::IMDFileData::getPulses, "Pulse values")
             .def_property_readonly("intensities", &imd::IMDFileData::getIntensities, "Intensity values")
             .def_property_readonly("num_markers", &imd::IMDFileData::getNumMarkers, "Number of markers")
-            .def_property_readonly("num_pushes", &imd::IMDFileData::getNumPushes, "Number of pushes");
+            .def_property_readonly("num_pushes", &imd::IMDFileData::getNumPushes, "Number of pushes")
+            .def_property_readonly("marker_names", &imd::IMDFileData::getMarkerNames, "Marker names");
 
-    // TODO use buffer views for toDense (https://github.com/pybind/pybind11/blob/master/docs/advanced/pycpp/numpy.rst)
     py::class_<imd::IMDFileData::CSRAccessor>(m, "IMDFileDataCSRAccessor")
             .def("__getitem__", imd::py::getValuesByPushIndex, py::arg("pushIndex"), "Value access by push index")
             .def("__getitem__", imd::py::getValuesByMarkerName, py::arg("markerName"), "Value access by marker name")
-            .def("getByMarkerIndex", imd::py::getValuesByMarkerIndex, py::arg("markerIndex"),
+            .def("get_by_marker_index", imd::py::getValuesByMarkerIndex, py::arg("markerIndex"),
                  "Value access by marker index")
             .def("__getitem__", imd::py::getValueByPushIndexAndMarkerName, py::arg("index"),
                  "Value access by push index and marker name")
-            .def("getByMarkerIndex", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
+            .def("get_by_marker_index", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
                  "Value access by push index and marker index")
             .def("toDense", &imd::IMDFileData::CSRAccessor::toDense,
                  "Converts the matrix to a dense row-major representation");
