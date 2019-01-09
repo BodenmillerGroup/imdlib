@@ -43,7 +43,7 @@ namespace imd {
         if (pushIndex >= data.pushOffsets.size()) {
             throw std::out_of_range("Push index out of range: " + std::to_string(pushIndex));
         }
-        return {values.begin() + data.pushOffsets[pushIndex], values.begin() + data.pushOffsets[pushIndex]};
+        return {values.begin() + data.pushOffsets[pushIndex], values.begin() + data.pushOffsets[pushIndex + 1]};
     }
 
     std::vector<std::uint16_t> IMDFileData::CSRAccessor::operator[](const std::string &markerName) const {
