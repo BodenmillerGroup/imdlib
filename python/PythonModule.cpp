@@ -64,8 +64,8 @@ PYBIND11_MODULE(imdpy, m) {
                  "Value access by marker index")
             .def("__getitem__", imd::py::getValueByPushIndexAndMarkerName, py::arg("index"),
                  "Value access by push index and marker name")
-            .def("get_by_marker_index", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
+            .def("__getitem__", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
                  "Value access by push index and marker index")
-            .def("toDense", &imd::IMDFileData::CSRAccessor::toDense,
+            .def("to_dense", &imd::IMDFileData::CSRAccessor::toDense,
                  "Converts the matrix to a dense row-major representation");
 }

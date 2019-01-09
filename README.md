@@ -13,6 +13,10 @@ IMD file parser library
 http://www.pugixml.org <br />
 Tested with pugixml 1.8.1
 
+* **googletest** (optional, for unit test support) <br />
+https://github.com/google/googletest <br />
+Tested with googletest 1.8.0
+
 * **pybind11** (optional, for Python support) <br />
 https://github.com/pybind/pybind11 <br />
 Configured as a Git submodule, no additional setup required
@@ -53,6 +57,9 @@ int main(int argc, char *argv[]) {
     uint16_t intensityValue = intensities(pushIndex, markerName);
     std::cout << pulseValue << ", " << intensityValue << std::endl;
 
+    std::vector<uint16_t> denseIntensityMatrix = intensities.toDense();
+    std::cout << denseIntensityMatrix << std::endl;
+
     return 0;
 }
 ```
@@ -71,9 +78,12 @@ push_index = 123
 marker_index = 12
 marker_name = "191Ir"
 data = imd.read_data()
-pulseValue = data.pulses[push_index, marker_index]
-intensityValue = data.pulses[push_index, marker_name]
-print(pulseValue, intensityValue)
+pulse_value = data.pulses[push_index, marker_index]
+intensity_value = data.intensities[push_index, marker_name]
+print(pulse_value, intensity_value)
+
+dense_intensity_matrix = data.intensities.to_dense()
+print(dense_intensity_matrix)
 ```
 
 At any time, a brief documentation is available using Python's built-in help functionality.
