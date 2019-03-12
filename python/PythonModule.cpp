@@ -67,5 +67,6 @@ PYBIND11_MODULE(imdpy, m) {
             .def("__getitem__", imd::py::getValueByPushIndexAndMarkerIndex, py::arg("index"),
                  "Value access by push index and marker index")
             .def("to_dense", &imd::IMDFileData::CSRAccessor::toDense,
-                 "Converts the matrix to a dense row-major representation");
+                 "Converts the matrix to a dense row-major representation")
+            .def("sum", &imd::IMDFileData::CSRAccessor::sum, "Sums up all markers for each push");
 }

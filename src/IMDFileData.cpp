@@ -58,10 +58,9 @@ namespace imd {
         if (markerIndex >= data.markerNames.size()) {
             throw std::out_of_range("Marker index out of range: " + std::to_string(markerIndex));
         }
-        std::vector<std::uint16_t> result;
-        result.reserve(data.getNumPushes());
+        std::vector<std::uint16_t> result(data.getNumPushes());
         for (std::size_t pushIndex = 0; pushIndex < data.getNumPushes(); ++pushIndex) {
-            result.push_back(getByMarkerIndex(pushIndex, markerIndex));
+            result[pushIndex] = getByMarkerIndex(pushIndex, markerIndex);
         }
         return result;
     }
@@ -91,6 +90,16 @@ namespace imd {
             }
         }
         return matrix;
+    }
+
+    std::vector<std::uint32_t> IMDFileData::CSRAccessor::sum() const {
+        std::vector<std::uint32_t> pushSums(data.getNumPushes(), 0);
+        for (std::size_t pushIndex = 0; pushIndex < data.getNumPushes(); ++pushIndex){
+            for (std::size_t i = data.pushOffsets[pushIndex]; i < data.pushOffsets[pushIndex + 1]; ++i) {
+                pushSums[pushIndex] += values[i];
+            }
+        }
+        return pushSums;
     }
 
 }
