@@ -92,14 +92,4 @@ namespace imd {
         return matrix;
     }
 
-    std::vector<std::uint32_t> IMDFileData::CSRAccessor::sum() const {
-        std::vector<std::uint32_t> pushSums(data.getNumPushes(), 0);
-        for (std::size_t pushIndex = 0; pushIndex < data.getNumPushes(); ++pushIndex){
-            for (std::size_t i = data.pushOffsets[pushIndex]; i < data.pushOffsets[pushIndex + 1]; ++i) {
-                pushSums[pushIndex] += values[i];
-            }
-        }
-        return pushSums;
-    }
-
 }

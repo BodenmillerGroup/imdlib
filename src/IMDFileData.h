@@ -38,8 +38,6 @@ namespace imd {
 
             std::vector<std::uint16_t> toDense() const;
 
-            std::vector<std::uint32_t> sum() const;
-
         };
 
         std::vector<std::size_t> pushOffsets;
