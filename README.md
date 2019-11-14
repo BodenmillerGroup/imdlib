@@ -5,7 +5,8 @@ IMD file parser library
 ## Features
 * Full data and metadata access (read-only)
 * Compressed row storage (CSR) of in-memory data
-* Python 3 bindings for interactive data access
+* Dual count computation similar to [cytofCore](https://github.com/nolanlab/cytofCore)
+* Python 3 bindings with pickle support
 
 ## Prerequisites
 
@@ -53,12 +54,14 @@ int main(int argc, char *argv[]) {
     const auto data = imdFile.readData();
     const auto &pulses = data.getPulses();
     const auto &intensities = data.getIntensities();
-    uint16_t pulseValue = pulses(pushIndex, markerIndex);
-    uint16_t intensityValue = intensities(pushIndex, markerName);
-    std::cout << pulseValue << ", " << intensityValue << std::endl;
+    const auto &dualCounts = data.getDualCounts();
+    std::uint16_t pulseValue = pulses(pushIndex, markerIndex);
+    std::uint16_t intensityValue = intensities(pushIndex, markerName);
+    std::vector<std::double_t> dualCountValues = dualCounts[markerName];
+    std::cout << pulseValue << ", " << intensityValue << ", " << dualCountValues[pushIndex] << std::endl;
 
-    std::vector<uint16_t> denseIntensityMatrix = intensities.toDense();
-    std::cout << denseIntensityMatrix << std::endl;
+    std::vector<std::uint16_t> denseIntensityMatrix = intensities.toDense();
+    std::cout << "Size of dense matrix: " << denseIntensityMatrix.size() << std::endl;
 
     return 0;
 }
@@ -69,18 +72,19 @@ For interactive/scripting usage, this is a Python 3 example:
 ```python3
 import imdpy
 
-imd = imdpy.IMDFile('/path/to/file')
+imd_file = imdpy.IMDFile('/path/to/file')
 
-metadata = imd.read_metadata()
+metadata = imd_file.read_metadata()
 print(metadata)
 
 push_index = 123
 marker_index = 12
 marker_name = "191Ir"
-data = imd.read_data()
+data = imd_file.read_data()
 pulse_value = data.pulses[push_index, marker_index]
 intensity_value = data.intensities[push_index, marker_name]
-print(pulse_value, intensity_value)
+dual_count_values = data.dual_counts[marker_name]
+print(pulse_value, intensity_value, dual_count_values)
 
 dense_intensity_matrix = data.intensities.to_dense()
 print(dense_intensity_matrix)

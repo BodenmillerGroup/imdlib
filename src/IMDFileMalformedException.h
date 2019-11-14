@@ -6,7 +6,7 @@
 
 namespace imd {
 
-    class IMDFileMalformedException : std::runtime_error {
+    class IMDFileMalformedException : public std::runtime_error {
 
         using std::runtime_error::runtime_error;
 

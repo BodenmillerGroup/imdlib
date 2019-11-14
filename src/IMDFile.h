@@ -4,16 +4,26 @@
 
 #include <fstream>
 #include <pugixml.hpp>
+#include <regex>
 #include <string>
 #include <vector>
-#include "IMDFileData.h"
+
+#include "IMDData.h"
 #include "IMDFileIOException.h"
 #include "IMDFileMalformedException.h"
 
 #define SEARCH_BUFFER_SIZE 8192
 #define EXPERIMENT_SCHEMA_START "<ExperimentSchema"
 #define EXPERIMENT_SCHEMA_END "</ExperimentSchema>"
-#define MARKER_SHORTNAME_XPATH "/ExperimentSchema/AcquisitionMarkers/ShortName"
+
+#define ACQUISITION_MARKERS_XPATH "/ExperimentSchema/AcquisitionMarkers"
+#define ACQUISITION_MARKERS_SHORT_NAME_ELEMENT_NAME "ShortName"
+#define ACQUISITION_MARKERS_MASS_ELEMENT_NAME "Mass"
+
+#define DUAL_ANALYTES_SNAPSHOT_XPATH "/ExperimentSchema/DualAnalytesSnapshot"
+#define DUAL_ANALYTES_SNAPSHOT_MASS_ELEMENT_NAME "Mass"
+#define DUAL_ANALYTES_SNAPSHOT_DUAL_SLOPE_ELEMENT_NAME "DualSlope"
+#define DUAL_ANALYTES_SNAPSHOT_DUAL_INTERCEPT_ELEMENT_NAME "DualIntercept"
 
 namespace imd {
 
@@ -34,12 +44,15 @@ namespace imd {
 
         static std::string readText(std::ifstream &file, const std::streamoff &startPos, const std::streamoff &endPos);
 
+        static std::string
+        readMetadataInternal(std::ifstream &file, std::streamoff *xmlStartPos, std::streamoff *xmlEndPos);
+
     public:
         explicit IMDFile(const std::string &path);
 
-        const IMDFileData readData() const;
-
         std::string readMetadata() const;
+
+        const IMDData readData() const;
     };
 
 }
