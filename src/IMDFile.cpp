@@ -91,10 +91,6 @@ namespace imd {
         return false;
     }
 
-    IMDFile::IMDFile(const std::string &path)
-            : path(path) {
-    }
-
     std::string IMDFile::readText(std::ifstream &file, const std::streamoff &startPos, const std::streamoff &endPos) {
         std::vector<char> buffer((std::size_t) endPos - startPos);
         file.seekg(startPos, std::ios_base::beg);
@@ -102,39 +98,99 @@ namespace imd {
         return toUTF8(buffer);
     }
 
-    const IMDFileData IMDFile::readData() const {
+    std::string
+    IMDFile::readMetadataInternal(std::ifstream &file, std::streamoff *xmlStartPos, std::streamoff *xmlEndPos) {
+        bool xmlEndFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_END, xmlEndPos);
+        if (!xmlEndFound) {
+            throw IMDFileMalformedException("Could not find XML end tag " EXPERIMENT_SCHEMA_END);
+        }
+        bool xmlStartFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_START, xmlStartPos, *xmlEndPos);
+        if (!xmlStartFound) {
+            throw IMDFileMalformedException("Could not find XML start tag " EXPERIMENT_SCHEMA_START);
+        }
+        std::string metadata = readText(file, *xmlStartPos, *xmlEndPos + toUTF16(EXPERIMENT_SCHEMA_END).size());
+        metadata = std::regex_replace(metadata, std::regex("&lt;"), "<");
+        metadata = std::regex_replace(metadata, std::regex("&gt;"), ">");
+        return metadata;
+    }
+
+    IMDFile::IMDFile(const std::string &path) : path(path) {
+    }
+
+    std::string IMDFile::readMetadata() const {
+        std::ifstream file(path, std::ios_base::binary);
+        if (!file) {
+            throw IMDFileIOException("Could not open file " + path);
+        }
+        std::streamoff xmlStartPos, xmlEndPos;
+        return readMetadataInternal(file, &xmlStartPos, &xmlEndPos);
+    }
+
+    const IMDData IMDFile::readData() const {
         // open file
         std::ifstream file(path, std::ios_base::binary);
         if (!file) {
             throw IMDFileIOException("Could not open file " + path);
         }
-        // find xml end tag
-        std::streamoff xmlEndPos;
-        bool xmlEndFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_END, &xmlEndPos);
-        if (!xmlEndFound) {
-            throw IMDFileMalformedException("Could not find XML end tag " EXPERIMENT_SCHEMA_END);
-        }
-        // find xml start tag
-        std::streamoff xmlStartPos;
-        bool xmlStartFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_START, &xmlStartPos, xmlEndPos);
-        if (!xmlStartFound) {
-            throw IMDFileMalformedException("Could not find XML start tag " EXPERIMENT_SCHEMA_START);
-        }
-        // parse metadata
+        // parse XML
         pugi::xml_document doc;
-        std::string metadata = readText(file, xmlStartPos, xmlEndPos + toUTF16(EXPERIMENT_SCHEMA_END).size());
+        std::streamoff xmlStartPos, xmlEndPos;
+        std::string metadata = readMetadataInternal(file, &xmlStartPos, &xmlEndPos);
         pugi::xml_parse_result parse_result = doc.load_string(metadata.c_str());
         if (!parse_result) {
             std::string error_message(parse_result.description());
             throw IMDFileMalformedException("Failed to parse experiment schema xml: " + error_message);
         }
-        // collect marker names
+        // collect marker names and masses
         std::vector<std::string> markerNames;
-        for (const pugi::xpath_node &node : doc.select_nodes(MARKER_SHORTNAME_XPATH)) {
-            markerNames.emplace_back(node.node().text().get());
+        std::vector<std::double_t> markerMasses;
+        for (const pugi::xpath_node &node : doc.select_nodes(ACQUISITION_MARKERS_XPATH)) {
+            markerNames.emplace_back(node.node().child(ACQUISITION_MARKERS_SHORT_NAME_ELEMENT_NAME).text().as_string());
+            markerMasses.emplace_back(node.node().child(ACQUISITION_MARKERS_MASS_ELEMENT_NAME).text().as_double());
+        }
+        // collect calibration masses, slopes and intercepts
+        std::vector<std::array<std::double_t, 3>> calibrationData;
+        for (const pugi::xpath_node &node : doc.select_nodes(DUAL_ANALYTES_SNAPSHOT_XPATH)) {
+            calibrationData.emplace_back(std::array<std::double_t, 3>{
+                    node.node().child(DUAL_ANALYTES_SNAPSHOT_MASS_ELEMENT_NAME).text().as_double(),
+                    node.node().child(DUAL_ANALYTES_SNAPSHOT_DUAL_SLOPE_ELEMENT_NAME).text().as_double(),
+                    node.node().child(DUAL_ANALYTES_SNAPSHOT_DUAL_INTERCEPT_ELEMENT_NAME).text().as_double()
+            });
+        }
+        std::sort(calibrationData.begin(), calibrationData.end(),
+                  [](const std::array<std::double_t, 3> &lhs, const std::array<std::double_t, 3> &rhs) {
+                      return lhs[0] < rhs[0];
+                  }
+        );
+        // compute marker slopes and intercepts
+        std::vector<std::double_t> markerSlopes(markerNames.size());
+        std::vector<std::double_t> markerIntercepts(markerNames.size());
+        for (std::size_t markerIndex = 0; markerIndex < markerNames.size(); ++markerIndex) {
+            if (markerMasses[markerIndex] <= calibrationData.front()[0]) {
+                markerSlopes[markerIndex] = calibrationData.front()[1];
+                markerIntercepts[markerIndex] = calibrationData.front()[2];
+            } else if (markerMasses[markerIndex] >= calibrationData.back()[0]) {
+                markerSlopes[markerIndex] = calibrationData.back()[1];
+                markerIntercepts[markerIndex] = calibrationData.back()[2];
+            }
+        }
+        for (std::size_t i = 0; i < calibrationData.size() - 1; ++i) {
+            const auto lowerCalibrationMass = calibrationData[i][0];
+            const auto upperCalibrationMass = calibrationData[i + 1][0];
+            const auto calibrationMassDelta = upperCalibrationMass - lowerCalibrationMass;
+            const auto slopeStep = (calibrationData[i + 1][1] - calibrationData[i][1]) / calibrationMassDelta;
+            const auto interceptStep = (calibrationData[i + 1][2] - calibrationData[i][2]) / calibrationMassDelta;
+            for (std::size_t markerIndex = 0; markerIndex < markerNames.size(); ++markerIndex) {
+                const auto markerMass = markerMasses[markerIndex];
+                if (markerMass >= lowerCalibrationMass && markerMass <= upperCalibrationMass) {
+                    const auto markerCalibrationMassDelta = markerMass - lowerCalibrationMass;
+                    markerSlopes[markerIndex] = calibrationData[i][1] + markerCalibrationMassDelta * slopeStep;
+                    markerIntercepts[markerIndex] = calibrationData[i][2] + markerCalibrationMassDelta * interceptStep;
+                }
+            }
         }
         // read data
-        IMDFileData data(markerNames);
+        IMDData data(markerNames, markerSlopes, markerIntercepts);
         file.seekg(0, std::ios_base::beg);
         std::vector<std::uint16_t> buffer(2 * markerNames.size());
         const auto bufferSize = buffer.size() * sizeof(std::uint16_t);
@@ -153,28 +209,6 @@ namespace imd {
         }
         data.pushOffsets.push_back(data.markerIndices.size());
         return data;
-    }
-
-    std::string IMDFile::readMetadata() const {
-        // open file
-        std::ifstream file(path, std::ios_base::binary);
-        if (!file) {
-            throw IMDFileIOException("Could not open file " + path);
-        }
-        // find xml end tag
-        std::streamoff xmlEndPos;
-        bool xmlEndFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_END, &xmlEndPos);
-        if (!xmlEndFound) {
-            throw IMDFileMalformedException("Could not find XML end tag " EXPERIMENT_SCHEMA_END);
-        }
-        // find xml start tag
-        std::streamoff xmlStartPos;
-        bool xmlStartFound = searchFileBackwards(file, EXPERIMENT_SCHEMA_START, &xmlStartPos, xmlEndPos);
-        if (!xmlStartFound) {
-            throw IMDFileMalformedException("Could not find XML start tag " EXPERIMENT_SCHEMA_START);
-        }
-        // read metadata
-        return readText(file, xmlStartPos, xmlEndPos + toUTF16(EXPERIMENT_SCHEMA_END).size());
     }
 
 }
