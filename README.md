@@ -1,5 +1,8 @@
 # imdlib
 
+:warning: **Despite considered stable, this library is currently not being actively maintained.** :warning:  
+If you would like to use this library and require updates/changes, please [contact the author](mailto:jonas.windhager@uzh.ch).
+
 IMD file parser library
 
 ## Features
@@ -91,6 +94,10 @@ print(dense_intensity_matrix)
 ```
 
 At any time, a brief documentation is available using Python's built-in help functionality.
+
+## Author
+
+Jonas Windhager [jonas.windhager@uzh.ch](mailto:jonas.windhager@uzh.ch)
 
 ## License
 
