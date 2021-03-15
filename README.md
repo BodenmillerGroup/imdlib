@@ -1,9 +1,9 @@
 # imdlib
 
+Library for parsing raw CyTOF .imd files using C++/Python
+
 :warning: **Despite considered stable, this library is currently not being actively maintained.** :warning:  
 If you would like to use this library and require updates/changes, please [contact the author](mailto:jonas.windhager@uzh.ch).
-
-IMD file parser library
 
 ## Features
 * Full data and metadata access (read-only)
